@@ -1,0 +1,46 @@
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="text/javascript" src="lib/jquery/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="lib/raphael/raphael.js"></script>
+    <script type="text/javascript" src="lib/bloom/metahub.js"></script>
+    <script type="text/javascript" src="lib/bloom/bloom.js"></script>
+    <script type="text/javascript" src="js/breeze.js"></script>
+    <link href="styles/main.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <div id="paper" class="canvas"></div>
+    <div id="overlay" class="canvas"></div>
+      <script type="text/javascript">
+    function draw() {
+    
+      var points = [[50, 50], [100, 50], [100, 100], [50, 100]];
+      var petal = Path.create(breeze);
+      petal.draw(points, 'R');
+    
+      //    var petal = breeze.draw_path(points);
+      //breeze.draw_control_points(points);
+      //   var petal = paper.path("M 50 50 R 100 50 100 100 50 100z");
+      //    petal.animate({
+      //        'path': "M 50 50 R 100 50 180 180 50 100z"
+      //    }, 500);
+    }
+
+    var breeze;
+    $(function() {
+      breeze = Breeze.create('paper', 'overlay');
+  
+      draw();
+    });
+
+  </script>
+
+  </body>
+
+</html>

@@ -1,0 +1,34 @@
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="text/javascript" src="lib/jquery/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="lib/raphael/raphael.js"></script>
+    <script type="text/javascript" src="lib/bloom/metahub.js"></script>
+    <script type="text/javascript" src="lib/bloom/bloom.js"></script>
+    <script type="text/javascript" src="js/breeze.js"></script>
+    <link href="styles/main.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <div id="paper" class="canvas"></div>
+    <div id="overlay" class="canvas"></div>
+    <script>
+      $(function() {
+        breeze = Breeze.create('paper', 'overlay');
+        jQuery.get('images/iris.svg', function(response) {
+          var image = $($.parseXML(response));
+          var path = image.find('#path3767');
+          path.attr('d');
+        })
+      
+        draw();
+      });
+    </script>
+  </body>
+
+</html>
