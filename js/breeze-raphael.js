@@ -3,8 +3,8 @@ var Breeze = Meta_Object.sub_class('Breeze', {
     paper: null,
     overlay: null,
     initialize: function(paper, overlay) {
-        this.paper = Raphael(paper, 640, 480);
-        this.overlay = Raphael(overlay, 640, 480);
+        this.paper = Raphael(paper, 900, 700);
+        this.overlay = Raphael(overlay, 800, 600);
     },
     points_to_string: function(points, curve_type) {
         var text = 'M ' + points[0][0] + ' ' + points[0][1] + ' ' + curve_type;

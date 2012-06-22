@@ -18,15 +18,53 @@ and open the template in the editor.
     <div id="paper" class="canvas"></div>
     <div id="overlay" class="canvas"></div>
     <script>
-      $(function() {
-        breeze = Breeze.create('paper', 'overlay');
-        jQuery.get('images/iris.svg', function(response) {
-          var image = $($.parseXML(response));
-          var path = image.find('#path3767');
-          path.attr('d');
-        })
       
-        draw();
+      function import_path(breeze, source) {
+        var path = breeze.paper.path(source.attr('d'));
+        var keys = source.attr('style').split(/:|;/);
+        for (var x = 0; x < keys.length; x += 2) {
+          path.attr(keys[x], keys[x + 1]);
+        }
+        
+        return path;
+      }
+      
+      function load_layer(breeze, layer) {
+        var result = [];
+        var paths = layer.find('path');
+        for (var x = 0; x < paths.length; x++) {
+          result[x] = import_path(breeze, $(paths[x]));
+        }
+        return result;
+      }
+      
+      function animate_layer(first, second) {
+      
+      }
+      
+      $(function() {        
+        var breeze = Breeze.create('paper', 'overlay');
+        jQuery.get('images/iris.svg', function(response) {
+          var x, image = $(response);
+          var layers = image.find('g');
+          var new_layers = [];
+//          for (x = 0; x < layers.length; x++) {
+            new_layers.push(load_layer(breeze, $(layers[0])));
+//          }
+
+          for (x = 0; x < new_layers[0].length; x++) {
+            for (var layer = 0; layer < layers.length - 1; layer++) {        
+              new_layers[layer][x].animate({path: $($(layers[layer + 1]).children()[x]).attr('d')}, 1000, '<>'); 
+            }
+//            animate_layer(new_layers, new_layers[x + 1]);
+          }
+
+          //          path.attr("fill", source.attr('fill'));
+          //          path.attr("stroke", source.attr('stroke'));          
+//          new_paths[0].animate({path: image.find('#path2989').attr('d')}, 2000, '<', function() {
+//            new_paths[0].animate({path: image.find('#path3787').attr('d')}, 2000, '>');
+//          }); 
+        });
       });
     </script>
   </body>
