@@ -76,6 +76,31 @@ ul {
   width: 100%;
   height: 200px
 }
+.timeline > div {
+  
+	height: 100%;
+	width: 100%;
+}
+
+.timeline .graph {
+  
+	height: 85%;
+	width: 100%;
+}
+
+.timeline .graph .position{
+  
+	width: 2pt;
+	height: 100%;
+        background-color: green;
+}
+
+.timeline .status-bar {
+  
+	width: 100%;
+	background-color: gray;
+	height: 15%;
+}
 
 .html.panel textarea {
   resize:none;

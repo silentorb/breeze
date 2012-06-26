@@ -1,21 +1,19 @@
-MetaHub.import_all(); 
-Bloom.import_all();
-
 var Breeze = (function() {
   'use strict';
   var Breeze = {};
   MetaHub.current_module = Breeze;
+  var Meta_Object = MetaHub.Meta_Object;
   
   var Iris = Meta_Object.sub_class('Iris', {
-    initialize: function(element) {
+    initialize: function(element, width, height) {
       if (typeof element == 'string') {
         element = document.getElementById(element);
       }
 
       var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       element.appendChild(svg);
-      svg.setAttribute('width', 800);
-      svg.setAttribute('height', 600);
+      svg.setAttribute('width', width);
+      svg.setAttribute('height', height);
       svg.setAttribute('version', '1.1');
       this.element = svg;
 
@@ -226,28 +224,34 @@ var Breeze = (function() {
   
   var animator = {
     frame: 0,
-    items: [],    
-    start: function() {
-      this.frame = 0;
-      setInterval(animator.update, 1000 / 60);
+    items: [],
+    is_playing: false,
+    length: 1000,
+    play: function(frame) {
+      this.frame = frame || 0;
+      this.is_playing = true;
+      this.interval_id = setInterval(animator.update, 1000 / 60);
     },
     stop: function() {
-      
+      this.is_playing = false;
+      clearInterval(this.interval_id);
     },
     tween: function(start, end, time, duration) {
       return start + ((end - start) * time / duration);
     },
     update: function() {
-      var x;
+      var x;      
       animator.frame++;
-      document.getElementById('log').innerHTML = (animator.frame / 100);
+//      document.getElementById('log').innerHTML = (animator.frame / 100);
       for (x = 0; x < animator.items.length; x++) {
         animator.items[x].update_animation(animator.frame);
+      }
+      
+      if (typeof animator.on_update == 'function') {
+        animator.on_update(animator);
       }
     }
   };
   Breeze.animator = animator;
   return Breeze;
 })();
-
-  
