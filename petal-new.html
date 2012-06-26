@@ -1,0 +1,122 @@
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="text/javascript" src="lib/jquery/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="lib/bloom/metahub.js"></script>
+    <script type="text/javascript" src="lib/bloom/bloom.js"></script>
+    <script type="text/javascript" src="js/breeze.js"></script>
+    <link href="styles/main.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <div id="log"></div>
+    <div id="paper" class="canvas"></div>
+    <script>
+  
+      $(function () {
+        Breeze.import_all();
+        var iris = Iris.create('paper');
+        function draw(transform, color) {
+          var points = [[100,100, 'M'], [200,100, 'L'], [200,200]];
+          var element = Iris.create_path(points);
+          element.setAttribute('transform', transform);
+          element.setAttribute('style', 'fill-opacity:0;stroke:' + color);
+          iris.element.appendChild(element);
+        }
+                
+        function test_transforms() {
+          draw('rotate(20)', 'red');
+          draw('translate(-150, -150) rotate(20) translate(150, 150)', 'black');
+          draw('translate(-100, -100) rotate(20) translate(100, 100)', 'blue');
+          draw('', 'green');
+          draw('translate(-150, -150)', 'green');
+          draw('translate(-150, -150) rotate(10)', 'red');
+          draw('translate(-150, -150) rotate(10) translate(200,200)', 'gray');
+          draw('translate(100, 100) rotate(50, 150, 150)', 'orange');
+        }
+        
+        function test2() {
+          jQuery.get('images/breeze-test4.svg', function(response) {
+            iris.load_data(response);
+            var path = iris.get_connection('child');
+            console.log(path.element.getAttribute('d'));
+            //          var text = iris.layers[1].children[0].getAttribute('d');
+            var text = path.element.getAttribute('d');
+            path.element.setAttribute('d', text);
+            path.element.setAttribute('transform', 'translate(0, -250)');
+
+            var points = Iris.string_to_points(text);
+            console.log(points);
+            var element = Iris.create_path(points);
+            element.setAttribute('transform', 'translate(200, -250)');
+            element.setAttribute('style', 'fill-opacity:0;stroke:' + 'black');
+            iris.element.appendChild(element);
+            //          Breeze.animator.start();
+          });
+        }
+        function test3() {
+          jQuery.get('images/breeze-test3.svg', function(response) {
+            iris.load_data(response);
+            var path = iris.get_connection('child');
+            path.element.setAttribute('transform', 'translate(0, -250)');
+            Breeze.animator.start();
+          });
+        }
+        
+//        test_transforms();
+        //        test2();    
+        test3();
+      });
+
+      //      var Page = {
+      //        load: function() {
+      //          Block.source_path = "images";
+      //
+      //          var blocks = [
+      //            'iris'
+      //          ];
+      //
+      //          Ground.add('block', blocks, Block.load);
+      //          Ground.fertilize(function() {
+      //            if (window.UNIT_TEST == undefined) {
+      //              Page.initialize();
+      //            }
+      //            else {
+      //              run_tests(); 
+      //            }        
+      //          });
+      //        }
+      //      };
+      
+      function import_path(breeze, source) {
+        var path = breeze.paper.path(source.attr('d'));
+        var keys = source.attr('style').split(/:|;/);
+        for (var x = 0; x < keys.length; x += 2) {
+          path.attr(keys[x], keys[x + 1]);
+        }
+        
+        return path;
+      }
+      
+      function load_layer(breeze, layer) {
+        var result = [];
+        var paths = layer.find('path');
+        for (var x = 0; x < paths.length; x++) {
+          result[x] = import_path(breeze, $(paths[x]));
+        }
+        return result;
+      }
+      
+      function animate_layer(first, second) {
+      
+      }
+      
+    </script>
+  </body>
+
+</html>

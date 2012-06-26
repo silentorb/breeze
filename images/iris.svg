@@ -122,8 +122,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.8"
-     inkscape:cx="216.43225"
-     inkscape:cy="330.75186"
+     inkscape:cx="273.51783"
+     inkscape:cy="332.78986"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
      showgrid="false"
@@ -195,7 +195,7 @@
      inkscape:label="1"
      inkscape:groupmode="layer"
      id="layer1"
-     style="display:inline"
+     style="display:none"
      transform="translate(-227.79504,-135.96041)">
     <path
        style="fill:#652883;fill-opacity:1;stroke:#000000;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"

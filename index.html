@@ -8,39 +8,25 @@ and open the template in the editor.
     <title></title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <script type="text/javascript" src="lib/jquery/jquery-1.7.2.min.js"></script>
-    <script type="text/javascript" src="lib/raphael/raphael.js"></script>
-    <script type="text/javascript" src="lib/bloom/metahub.js"></script>
-    <script type="text/javascript" src="lib/bloom/bloom.js"></script>
+    <script type="text/javascript" src="lib/jquery-ui/js/jquery-ui-1.8.20.custom.min.js"></script>
+    <script type="text/javascript" src="/bloom/lib/metahub.js"></script>
+    <script type="text/javascript" src="/bloom/lib/bloom.js"></script>
     <script type="text/javascript" src="js/breeze.js"></script>
-    <link href="styles/main.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="lib/menu/menu.js"></script>
+    <script type="text/javascript" src="js/garden.js"></script>
+
+    <link rel="stylesheet" href="lib/menu/menu.css" />
+    <link rel="stylesheet" href="styles/main.css" />
   </head>
   <body>
-    <div id="paper" class="canvas"></div>
-    <div id="overlay" class="canvas"></div>
-      <script type="text/javascript">
-    function draw() {
-    
-      var points = [[50, 50], [100, 50], [100, 100], [50, 100]];
-      var petal = Path.create(breeze);
-      petal.draw(points, 'R');
-    
-      //    var petal = breeze.draw_path(points);
-      //breeze.draw_control_points(points);
-      //   var petal = paper.path("M 50 50 R 100 50 100 100 50 100z");
-      //    petal.animate({
-      //        'path': "M 50 50 R 100 50 180 180 50 100z"
-      //    }, 500);
-    }
-
-    var breeze;
-    $(function() {
-      breeze = Breeze.create('paper', 'overlay');
-  
-      draw();
-    });
-
-  </script>
-
+    <ul class="vertical panel">
+      <li class="top-section"><ul class="horizontal panel">
+          <li class="project panel"></li>
+          <li class="canvas panel"></li>
+          <li class="html panel"></li>
+        </ul>
+      </li>
+      <li class="timeline panel"></li>
+    </ul>
   </body>
-
 </html>

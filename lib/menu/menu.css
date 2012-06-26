@@ -1,0 +1,33 @@
+.menu.top {
+  width: 100%;
+  height: 30px;
+  font-family: 	segoe ui,verdana,sans-serif;
+}
+
+.menu ul {
+  list-style-type: none;
+  background-color: white;
+  z-index: 100;
+  background: white;
+  position: relative;
+  width: 100px;
+}
+
+.menu > ul {
+
+}
+
+.menu li > span {
+  margin: 0 18px;
+  cursor: pointer;
+}
+
+.menu ul ul {
+  border: 1px solid gray;
+  padding: 6px 16px;
+}
+
+
+.menu li {
+  cursor: pointer;
+}
