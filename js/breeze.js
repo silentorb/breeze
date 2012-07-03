@@ -36,6 +36,15 @@ var Breeze = (function() {
       this.element.appendChild(layer);
       this.layers.push(layer);
     },
+    get_petal: function(id) {
+      var petals = this.get_connections('child');
+      for (var x = 0; x < petals.length; x++) {
+        if (petals[x].element.id == id)
+          return petals[x];
+      }
+    
+      return null;
+    },
     load_data: function(data) {
       var x, defs = data.getElementsByTagName('defs');
       for (x = 0; x < defs.length; x++) {
@@ -47,8 +56,8 @@ var Breeze = (function() {
       var layers = data.getElementsByTagName('g');
       var paths = layers[0].getElementsByTagName('path');
       for (x = 0; x < paths.length; x++) {
-        var path = Path.create(paths[x], layers);
-        path.animate(layers, x);
+        var path = Path.create(paths[x]);
+        //        path.animate(layers, x);
         this.connect(path, 'child', 'parent');
       }
       
@@ -137,12 +146,72 @@ var Breeze = (function() {
             mode = mode.toUpperCase();
           }
         }
-                                 
+              
         if (mode == 'C') {
           var cp1 = add_point();
           var cp2 = add_point();
           var point = add_point(mode);
           point.cps = [ cp1, cp2];
+        }
+        else {
+          var point = add_point(mode);
+        }
+        
+        points.push(point);
+        last_x = point.x;
+        last_y = point.y;
+      }        
+      
+      console.log(points);
+      return points;
+    },
+    string_to_points2: function(text) {
+      var point, points = [], i, mode = 'M',
+      relative = false, numbers = text.match(/(\-?[\d\.]+|[A-Za-z])/g),
+      last_x = 0, last_y = 0, cps = [];
+      
+      function add_point(mode) {
+        var point;
+        if (relative) {
+          point = {
+            x: last_x + parseFloat(numbers[i]), 
+            y: last_y + parseFloat(numbers[i + 1])
+          };        
+        }
+        else {
+          point = {
+            x: parseFloat(numbers[i]), 
+            y: parseFloat(numbers[i + 1])
+          };        
+        }
+        if (mode) {
+          point.mode = mode;
+        }
+        i += 2;
+        return point;
+      }
+      
+      //      console.log(numbers);
+      for (i = 0; i < numbers.length;) {
+        // Curve description letters are stored in the third index of a point array
+        if (numbers[i].match(/[A-Za-z]/)) {
+          mode = numbers[i];
+          if (mode == 'z' || mode == 'Z') {
+            break;
+          }
+          i++;
+          relative = mode.match(/[a-z]/);
+          if (relative) {
+            mode = mode.toUpperCase();
+          }
+        }
+              
+        if (mode == 'C') {
+          
+          var cp1 = add_point();
+          var cp2 = add_point();
+          var point = add_point(mode);
+          point.cps = [ cp1, cp2 ];
         }
         else {
           var point = add_point(mode);
@@ -164,6 +233,7 @@ var Breeze = (function() {
     }
   });
   
+  // Petal is the Breeze wrapper for an individual SVG object, usually a path
   var Petal = Meta_Object.sub_class('Petal', {
     initialize: function() {
       
@@ -183,16 +253,21 @@ var Breeze = (function() {
         self.invoke('click', event);
       };  
     },
-    drag: function(action) {
+    drag: function(action, finished) {
       var element = this.element
       //      element.onmousedown = function() {
       //        console.log('hey!');
       //      };
-      var mouseup = function() {
-          document.removeEventListener('mouseup', mouseup);
-          document.removeEventListener('mousemove', action);
-        };
+      var mouseup = function(event) {
+        event.preventDefault();
+        document.removeEventListener('mouseup', mouseup);
+        document.removeEventListener('mousemove', action);
+        if (typeof finished == 'function') {
+          finished(event);
+        }
+      };
       element.addEventListener('mousedown', function(event) {
+        event.preventDefault();
         document.addEventListener('mousemove', action, false);
         document.addEventListener('mouseup', mouseup, false);
         event.preventBubble();
@@ -200,104 +275,293 @@ var Breeze = (function() {
     }
   });
   
-  // Path is the Breeze wrapper for an individual SVG object, usually a path
   var Path = Petal.sub_class('Path', {
-    keyframes: [],
-    initialize: function(source, layers) {
+    initialize: function(source) {
       this.element = source;
-      if (layers) {
-        for (var x = 0; x < layers.length; x++) {
-          this.add_keyframe(layers[x]);     
-        }
-        
-        this.points = jQuery.extend(true, [], this.keyframes[0]);
-      }
+      
+      this.points = Iris.string_to_points(source.getAttribute('d'));
+      this.original_points = jQuery.extend(true, [], this.points);
       this.set_path(this.points);
       this.initialize_element(this.element);
-    },
-    add_keyframe: function(layer) {
-      var path = Iris.string_to_points(layer.firstElementChild.getAttribute('d'));
-      this.keyframes.push(path);
-    },
-    animate: function() {
-      animator.items.push(this);
     },
     set_path: function(points) {
       points = points || this.points;
       var text = Iris.points_to_string(points);
-      last_text = text;
       this.element.setAttribute('d', text);
-    },
-    update: function(frame) {
-      //console.log(frame/ 100);
-
-      if (frame >= 100) {
-        animator.items.splice(animator.items.indexOf(this), 1);
-        console.log('new: ' + last_text);
-        return;
-      }
-      var start, end;
-      for (var p = 0; p < this.points.length; p++) {
-        start = this.keyframes[0][p];
-        end = this.keyframes[1][p];
-        // p.x
-        this.points[p].x = animator.tween(start.x, end.x, frame, 100);        
-        // p.y
-        this.points[p].y = animator.tween(start.y, end.y, frame, 100);
-      }
-      this.set_path(this.points);
     }
   });
-  var last_text;
   
   var Circle = Petal.sub_class('Circle', {
     initialize: function(cx, cy, radius) {
-      var self = this;
-      this.element = Iris.create_element('circle');
-      this.element.setAttribute('cx', cx);
-      this.element.setAttribute('cy', cy);
-      this.element.setAttribute('r', radius);
-                  
-      this.initialize_element(this.element);
+      var element = this.element = Iris.create_element('circle');      
+      element.setAttribute('cx', cx);
+      element.setAttribute('cy', cy);
+      element.setAttribute('r', radius);
+       
+      this.initialize_element(element);
     }    
   });
   
-  var animator = {
+  var Animation_Target = Meta_Object.sub_class('Animation_Target', {
+    initialize: function(seed) {
+      this.seed = seed;
+      this.connect(seed, 'seed', 'animation');
+      seed.listen(this, 'add.key', function(key, target) {
+        this.invoke('add.key', key, target);
+      });
+      
+      seed.listen(this, 'modify.key', function(key, target) {
+        this.invoke('modify.key', key, target);
+      });
+      
+      seed.listen(this, 'remove.key', function(key, target) {
+        this.invoke('remove.key', key, target);
+      });
+    },
+    add_initial_key: function() {            
+      var key = {
+        frame: 0, 
+        data: jQuery.extend(true, [], this.get_original_data())
+      };
+      this.keys = [key];    
+      this.invoke('add.key', key, this);
+    },
+    add_key: function(frame) {
+      var key = this.get_key(frame);
+      if (!key) {
+        this.insert_key(frame);
+      }
+      else {
+        key.data = this.clone_current_data();
+        this.invoke('modify.key', key, this);
+      }
+    },
+    clone_current_data: function() {
+      return jQuery.extend(true, [], this.get_current_data());
+    },
+    get_current_keys: function(frame, keys) {
+      var x;
+      
+      for (x = 0; x < keys.length; x++) {
+        if (keys[x].frame >= frame) {
+          if (x == 0 || keys[x].frame == frame) {
+            return [ keys[x] ];
+          }
+
+          return [ keys[x - 1], keys[x] ];          
+        }          
+      }
+      
+      return [ keys[keys.length - 1] ];
+    },
+    get_key: function(frame) {
+      var keys = this.keys;
+      for (var x = 0; x < keys.length; x++) {
+        if(keys[x].frame == frame)
+          return keys[x];
+      }
+    
+      return null;
+    },
+    insert_key: function(frame) {
+      var keys = this.keys;
+      
+      for (var x = 0; x < keys.length; x++) {
+        if (keys[x].frame > frame)
+          break;
+      }
+    
+      var key = {
+        frame: frame, 
+        data: this.clone_current_data()
+      };
+      
+      keys.splice(x, 0, key);
+      
+      this.invoke('add.key', key, this);
+    },
+    remove_key: function(key) {
+      this.keys.splice(this.keys.indexOf(key), 1);
+    },
+    save: function() {
+      var result = {
+        target: this.seed.element.id,
+        property: this.property,
+        keys: this.keys
+      };
+      
+      return result;
+    }
+  });
+  
+  var Path_Target = Animation_Target.sub_class('Path_Target', {
+    property: 'path',
+    get_current_data: function() {
+      return this.seed.points;
+    },
+    get_original_data: function() {
+      return this.seed.original_points;
+    },
+    update: function(frame, animator) {
+      var p, start, end, points = this.seed.points,
+      keys = this.get_current_keys(frame, this.keys),
+      duration;
+      
+      if (keys.length == 1) {
+        for (p = 0; p < points.length; p++) {
+          points[p].x = keys[0].data[p].x;
+          points[p].y = keys[0].data[p].y;
+        }
+      }
+      else {  
+        duration = keys[1].frame - keys[0].frame;
+        frame -= keys[0].frame;
+        for (p = 0; p < points.length; p++) {
+          start = keys[0].data[p];
+          end = keys[1].data[p];
+          // p.x
+          points[p].x = animator.tween(start.x, end.x, frame, duration);        
+          // p.y
+          points[p].y = animator.tween(start.y, end.y, frame, duration);
+        }
+      }
+      
+      this.seed.set_path(points);
+    }
+  });
+  
+  var Emotion = Meta_Object.sub_class('Emotion', {
+    duration: 100,
     frame: 0,
-    items: [],
+    targets: [],
+    save: function() {
+      var x, targets = [], result = {};
+    
+      for (x = 0; x < this.targets.length; x++) {
+        targets.push(this.targets[x].save());
+      }
+    
+      result.targets = targets;
+      result.duration = this.duration;
+      return result;
+    },
+    update: function(increment, animator) {
+      this.frame += increment;
+      for (var x = 0; x < this.targets.length; x++) {
+        this.targets[x].update(this.frame, this);
+      }
+    }
+  });
+  
+  var Animator = Meta_Object.sub_class('Animator', {
+    frame: 0,
     is_playing: false,
-    length: 1000,
+    duration: 100,
+    emotions: [],
+    active_emotions: [],
+    initialize: function() {
+      // In general, do not directly modify the targets array
+      this.optimize_getter('targets', 'target');
+      
+      //      this.optimize_getter('emotions', 'emotion'); 
+      this.listen(this, 'connect.emotion', function(item) {          
+        this.emotions.push(item);
+      });
+          
+      this.listen(this, 'disconnect.emotion', function(item) {
+        this.emotions.splice(this.emotions.indexOf(item), 1);
+        var x = this.active_emotions.indexOf(item);
+        if (x > -1)
+          this.active_emotions.splice(x, 1);
+      });
+    },
+    add_key: function(seed, property) {
+      var target = this.get_target(seed, property);
+      
+      if (!target) {
+        if (property == 'path') {
+          target = Path_Target.create(seed);
+          target.add_initial_key();
+          this.connect(target, 'target', 'parent');
+        }
+      }      
+      target.add_key(Breeze.animator.frame);
+    },
+    load: function(data, iris) {
+      var x, targets = data.targets;
+       
+      for (x = 0; x < targets.length; x++) {
+        this.load_target(targets[x], iris.get_petal(data.targets[x].target));
+      }
+    },
+    load_target: function(data, petal) {
+      var target;
+      
+      if (data.property == 'path') {
+        target = Path_Target.create(petal);
+      }
+        
+      target.keys = data.keys;
+      this.connect(target, 'target', 'parent');
+      return target;
+    },
+    get_target: function(seed, property) {
+      var target, x;
+      for (x = 0; x < this.targets.length; x++) {
+        target = this.targets[x];
+        if (target.seed === seed && target.property == property) {
+          return target;
+        }
+      }      
+      return null;
+    },
+    next: function() {
+      if (this.frame && this.frame >= this.duration) {
+        this.stop();
+        return;
+      }
+      this.frame++;
+      this.update();
+    },
     play: function(frame) {
+      var self = this;
       this.frame = frame || 0;
+      this.last_frame = this.frame;
       this.is_playing = true;
-      this.interval_id = setInterval(animator.update, 1000 / 60);
+      this.interval_id = setInterval(function() {
+        self.next();
+      }, 1000 / 60);
+    },
+    set_frame: function(frame) {
+      this.frame = frame;
+      this.update();
     },
     stop: function() {
       this.is_playing = false;
       clearInterval(this.interval_id);
+      this.set_frame(this.last_frame);
     },
     tween: function(start, end, time, duration) {
       return start + ((end - start) * time / duration);
     },
-    update: function() {
-      var x;      
-      animator.frame++;
+    update: function() {    
       //      document.getElementById('log').innerHTML = (animator.frame / 100);
-      for (x = 0; x < animator.items.length; x++) {
-        animator.items[x].update(animator.frame);
+      for (var x = 0; x < this.targets.length; x++) {
+        this.targets[x].update(this.frame, this);
       }
       
-      if (typeof animator.on_update == 'function') {
-        animator.on_update(animator);
+      for (var x = 0; x < this.emotions.length; x++) {
+        this.active_emotions[x].update(1, this);
       }
+      
+      this.invoke('update');
     }
-  };
+  });
   
   Breeze.import_all = function() {
     MetaHub.extend(window, Breeze);
   };
-  
-  
-  Breeze.animator = animator;
+    
+  Breeze.animator = Animator.create();
   return Breeze;
 })();
