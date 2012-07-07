@@ -5,24 +5,14 @@ Bloom.import_all();
 Breeze.import_all();
 
 var Page = {
-  load: function() {
-    Block.source_path = "html";
-
-    var blocks = [
-    'timeline',
-    'menu'
-    ];
-
-    Ground.add('block', blocks, Block.load);
-    //    Ground.add('data', ['creatures', 'abilities'], Data.load_resource);
-    Ground.fertilize(function() {
-      if (window.UNIT_TEST == undefined) {
-        Page.initialize();
-      }
-      else {
-        run_tests(); 
-      }
-    });
+  iris_properties: {
+    translate_x: 'double',
+    translate_y: 'double',
+    rotate: 'double',
+    scale_x: 'double',
+    scale_y: 'double',
+    anchor_x: 'double',
+    anchor_y: 'double'
   },
   initialize: function() { 
     this.menu = this.create_menu();
@@ -30,8 +20,24 @@ var Page = {
     $('.timeline.panel').append(this.timeline.element);
     this.timeline.graph.update();
     this.keyboard_actions();
+    this.initialize_project_panel();
     
-    this.load_iris('lines.svg');   
+    this.properties = Properties_Panel.create();
+    $('.properties.panel').append(this.properties.element);
+    
+    this.load_iris('lines.svg');
+  },
+  initialize_project_panel: function() {
+    this.project_panel = Tab_Panel.create();
+    $('.project.panel').append(this.project_panel.element);
+    
+    var scene = Scene_Panel.create();
+    scene.title = "Scene";
+    var emotions = Emotions_Panel.create(Breeze.animator);
+    emotions.title = "Emotions";
+    this.project_panel.connect(scene, 'child', 'parent');
+    this.project_panel.connect(emotions, 'child', 'parent');
+    this.project_panel.set_tab(emotions);
   },
   create_canvas: function() {
     var self = this;
@@ -66,8 +72,8 @@ var Page = {
             Breeze.animator.play(Breeze.animator.frame);
           }
           break;
-          case 100:
-            Page.timeline.graph.delete_selection();
+        case 100:
+          Page.timeline.graph.delete_selection();
           break;
         default:
           used = false;    
@@ -92,23 +98,55 @@ var Page = {
       event.preventDefault();
     });
   },
+  load: function() {
+    Block.source_path = "html";
+
+    var blocks = [
+    'emotions',
+    'timeline',
+    'menu',
+    'properties',
+    'scene',
+    'tab-panel'
+    ];
+
+    Ground.add('block', blocks, Block.load);
+    //    Ground.add('data', ['creatures', 'abilities'], Data.load_resource);
+    Ground.fertilize(function() {
+      if (window.UNIT_TEST == undefined) {
+        Page.initialize();
+      }
+      else {
+        run_tests(); 
+      }
+    });
+  },
   load_iris: function(filename) {
     //    filename = 'test.ech';
     var self = this;
     jQuery.get('images/' + filename, function(response) {
-      jQuery.get('images/' + 'test.brz', function(response2) {
+      jQuery.get('images/' + 'test3.brz', function(response2) {
         self.create_canvas();
         self.canvas.load(response);
         Breeze.animator.load(response2, self.canvas.iris);
+        //        var animator = Breeze.animator;
+        //        var emotion = Emotion.create();
+        //        animator.connect(emotion, 'emotion', 'parent');
+        //        emotion.animator = animator;
+        //        emotion.active(true);
+        //        emotion.load(response2, self.canvas.iris);
+        if (Breeze.animator.emotions.length > 0) {
+          Breeze.animator.emotions[0].active(true);      
+        }
+
       }, 'json');
     });
-
   },
   new_iris: function() {
     this.create_canvas();
   },
   save_iris: function(filename) {
-    filename = filename || 'test.brz';    
+    filename = filename || 'test3.brz';    
     var data = {
       'data': JSON.stringify(this.save_animation()),
       'filename': filename
@@ -138,18 +176,92 @@ $(function () {
   Page.load();
 });
 
-var Selection = Meta_Object.sub_class('Selection', {
-  add: function(item) {
-    if (this.connection(item)) {
-      return;
+MetaHub.extend(Breeze.animator, {
+  add_key: function(seed, property) {
+    var emotion = this.current_emotion();
+    if (emotion)
+      emotion.add_key(seed, property);
+  },
+  current_emotion: function(emotion) {
+    if (emotion === undefined || emotion === this.active_emotions[0])
+      return this.active_emotions[0];
+    
+    for (var x = 0; x < Breeze.animator.active_emotions.length; ++x) {
+      this.active_emotions[x].active(false);
     }
     
-    this.disconnect_all('selected');
+    emotion.active(true);
+    this.update();
+    this.invoke('emotion.change', emotion);
+    return emotion;
+  }  
+});
+
+var Selection = Meta_Object.sub_class('Selection', {
+  add: function(item) {
+    if (this.connection(item))
+      return;
     
+    this.disconnect_all('selected');    
     this.connect(item, 'selected', 'selection');
   },
   remove: function(item) {
     this.disconnect(item);
+  }
+});
+
+var Scene_Panel = Flower.sub_class('Scene_Panel', {
+  block: 'scene'
+});
+
+var Emotion_Flower = Flower.sub_class('Emotion_Flower', {
+  initialize: function() {
+    var self = this;
+    this.element = $('<li>' + this.seed.name + '</li>');
+    if (this.seed.active()) {
+      this.element.addClass('active');
+    }
+    
+    this.listen(this.seed, 'active', function(active) {
+      if (active) {
+        this.element.addClass('active');
+      }
+      else {
+        this.element.removeClass('active');
+      }
+    });
+    
+    this.click(function() {
+      if (!this.seed.active()) {
+        Breeze.animator.current_emotion(this.seed);
+      }
+    });
+    
+    this.element.dblclick(function() {
+      Bloom.edit_text(self.element, function(value) {
+        self.seed.name = value;
+      }); 
+    });
+  }
+});
+
+var Emotion_List = List.sub_class('Emotion_List', {
+  block: 'list',
+  item_type: Emotion_Flower,
+  initialize: function() {    
+    this.watch_seed('emotion');
+    
+  }
+});
+
+var Emotions_Panel = List.sub_class('Emotions_Panel', {
+  block: 'emotions',
+  initialize: function() {
+    var self = this;
+    this.list = Emotion_List.create(this.seed, this.element.find('.list'));
+    this.element.find('.buttons li').click(function() {
+      Breeze.animator.create_emotion(this.seed);
+    });       
   }
 });
 
@@ -165,10 +277,17 @@ var Control_Point = Circle.sub_class('Control_Point', {
         var offset = $(element).parent().offset();
         self.move(event.pageX - offset.left, event.pageY - offset.top );
       }, function() {
-        Breeze.animator.add_key(self.get_connection('source'), 'path');
+        var source = self.get_connection('source');
+        Breeze.animator.add_key(source, 'path');
       });
-    });
     
+    });
+  
+    this.listen(this, 'connect.source', function() {
+      var source = self.get_connection('source');
+      this.attr('transform', source.attr('transform'));    
+    });
+      
     this.listen(Breeze.animator, 'update', function() {
       this.element.setAttribute('cx', this.point.x);
       this.element.setAttribute('cy', this.point.y);    
@@ -190,6 +309,30 @@ var Control_Point = Circle.sub_class('Control_Point', {
   }
 });
 
+MetaHub.extend(Petal.properties, {
+  initialize_more: function() {
+    var self = this;  
+
+    this.element.onclick = function(event) {
+      event.stopPropagation();
+      self.invoke('click', event);
+    };
+  
+    this.listen(this, 'change', function(name, value, source) {    
+      Breeze.animator.add_key(this, name);
+      this.update_transform();
+    });
+  },
+  update_transform: function() {
+    var transform = this.generate_transform();
+    this.attr('transform', transform);
+    var overlay_objects = this.get_connections('overlay');
+    for (var x = 0; x < overlay_objects.length; x++) {
+      overlay_objects[x].attr('transform', transform);
+    }
+  }
+});
+
 var Canvas = Flower.sub_class('Canvas', {
   initialize: function () {
     
@@ -197,20 +340,20 @@ var Canvas = Flower.sub_class('Canvas', {
     var height = this.element.height();
     this.iris = Iris.create(this.element[0],width, height);
     
-    this.listen(this.iris, 'connect.child', function(petal) {
-      this.listen(petal, 'click', function() {
-        Page.connect(petal, 'selected', 'page');
-      });
-    });
+    this.listen(this.iris, 'connect.child', this.initialize_petal);      
+    this.listen(Page, 'connect.selected', this.petal_selected);
+    this.listen(Page, 'disconnect.selected', this.petal_deselected);
       
-    this.listen(this, 'connect.parent', function(parent) {
-      this.unlisten(this, 'connect.parent');
-      this.listen(parent, 'connect.selected', this.petal_selected);
-      this.listen(parent, 'disconnect.selected', this.petal_deselected);
-    });      
     this.listen(this, 'disconnect-all', function() {
       this.iris.disconnect_all();
     });
+  },
+  initialize_petal: function (petal) {
+    this.listen(petal, 'click', function() {
+      Page.connect(petal, 'selected', 'page');
+    });
+    
+    petal.initialize_more();
   },
   create_control_point: function(petal, point, size) {
     var cp = Control_Point.create(point.x, point.y, size);
@@ -260,7 +403,7 @@ var Keyframe_Marker = Timeline_Marker.sub_class('Keyframe_Marker', {
       moving: this.move_position      
     });
     
-    this.click(this, this.move_position);
+    this.click(this.move_position);
     
     this.listen(this, 'connect.selection', function() {
       this.element.addClass('selected');
@@ -295,9 +438,11 @@ var Timeline_Graph = Flower.sub_class('Timeline_Graph', {
     
     this.listen(Page, 'connect.selected', this.petal_selected);
     this.listen(Page, 'disconnect.selected', this.petal_deselected);  
-    this.click(this, function() {
+    this.click(function() {
       this.selection.disconnect_all('selected');
     });
+  
+    this.listen(Breeze.animator, 'emotion.change', this.update_keyframes);
   },
   add_marker: function(type, frame) {
     var marker = Timeline_Marker.create();
@@ -375,15 +520,8 @@ var Timeline_Graph = Flower.sub_class('Timeline_Graph', {
   },
   petal_selected: function(petal) {
     var x, y, targets = petal.get_connections('animation');
-    
-    for (x = 0; x < targets.length; x++) {
-      var target = targets[x];
-      for (y = 0; y < target.keys.length; y++) {
-        this.add_keyframe_marker(target.keys[y], target);
-      }
-    }
-    
     this.listen(petal, 'add.key', this.add_keyframe_marker);
+    this.update_keyframes();
   },
   petal_deselected: function(petal) {
     var markers = this.get_connections('keyframe');
@@ -395,7 +533,7 @@ var Timeline_Graph = Flower.sub_class('Timeline_Graph', {
   },
   update: function() {
     this.range = Flower.create(this.element.parent().find('.range'));
-    this.range.click(this, this.change_position);
+    this.range.click(this.change_position, this);
     this.range.drag({
       owner: this, 
       moving: this.change_position
@@ -403,6 +541,24 @@ var Timeline_Graph = Flower.sub_class('Timeline_Graph', {
     
     this.element.parent().append(this.position.element);
     this.position.set_position(Breeze.animator.frame);
+  },
+  update_keyframes: function() {
+    var x, y, z, emotion = Breeze.animator.current_emotion();
+    this.disconnect_all('keyframe');
+
+    if (!emotion)
+      return;
+    
+    var selection = Page.selection();
+    for (var x = 0; x < selection.length; x++) {
+      var channels = emotion.get_petal_targets(selection[x]);
+      for (var y = 0; y < channels.length; y++) {
+        var channel = channels[x];
+        for (var z = 0; z < channel.keys.length; z++) {
+          this.add_keyframe_marker(channel.keys[z], channel);
+        }
+      }
+    }
   }
 });
 
@@ -410,5 +566,20 @@ var Timeline_Panel = Flower.sub_class('Timeline_Panel', {
   block: 'timeline',
   initialize: function() {
     this.graph = Timeline_Graph.create(this.element.find('.graph'));
+  }
+});
+
+var Properties_Panel = Editor.sub_class('Properties_Panel', {
+  block: 'properties',
+  initialize: function() {
+    this.listen(Page, 'connect.selected', this.petal_selected);
+    this.listen(Page, 'disconnect.selected', this.petal_deselected);
+     
+  },
+  petal_selected: function(petal) {
+    this.set_seed(petal, Page.iris_properties);
+  },
+  petal_deselected: function() {
+    this.empty();
   }
 });

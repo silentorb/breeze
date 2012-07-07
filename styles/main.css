@@ -1,13 +1,15 @@
-/*.canvas {
-    position: absolute;
-    left:0;
-    top:0;
-}*/
+body {
+  font-family: segoe ui,verdana,sans-serif;
+}
 
 ul {
   list-style-type: none;
   margin: 0pt;
   padding: 0pt;
+}
+
+ul.horizontal > li {
+  display: inline;
 }
 
 .panel {
@@ -18,7 +20,7 @@ ul {
   box-shadow: 3pt 3pt 3pt rgba(0, 0, 0, 0.22);
 }
 
-.vertical.panel {
+ul.vertical.panel {
   margin: 0;
   border: none;
   padding-right: 10pt;
@@ -26,7 +28,7 @@ ul {
   padding-bottom: 10pt;
 }
 
-.horizontal.panel {
+ul.horizontal.panel {
   border: none;
   padding-bottom: 10pt;
   box-shadow: none;
@@ -35,21 +37,21 @@ ul {
   width: 100%;
 }
 
-.horizontal.panel > li {
+ul.horizontal.panel > li {
   display: inline-block;
   margin-left: 5pt;
 }
 
-.horizontal.panel > li:first-child {
+ul.horizontal.panel > li:first-child {
   margin-left: 0;
 }
 
-.vertical.panel > li {
+ul.vertical.panel > li {
   margin-top: 10pt;
   display: block;
 }
 
-.vertical.panel > li:first-child {
+ul.vertical.panel > li:first-child {
   margin-top: 0;
 }
 
@@ -67,8 +69,8 @@ ul {
   height: 100%;
 }
 
-.html.panel {
-  width: 24%;
+.properties.panel {
+  width: 23%;
   height: 100%;
 }
 
@@ -122,12 +124,73 @@ ul {
   height: 15%;
 }
 
-.properties.panel textarea {
-  resize:none;
-  width: 100%;
-  height: 100%;
-}
-
 svg {
   position:absolute;
+}
+
+ul.horizontal.tabs {
+
+  height: 19pt;
+  background: #CBE4E4;
+  padding: 8pt 0 0;
+}
+
+ul.horizontal.tabs > li {
+  display: inline;
+  padding: 4pt 12pt 3pt;
+  cursor: pointer;  
+  background: none repeat scroll 0 0 #E8E8E8;
+  border-radius: 8pt 8pt 0pt 0pt;
+  height: 37pt;
+  margin-bottom: -2pt;
+  margin-top: 3pt;
+  margin-left: 0pt;
+  width: 41pt;
+}
+
+ul.horizontal.tabs > li.active {
+  background: white;
+}
+
+.emotions {
+  padding: 10pt;
+}
+
+.emotions .buttons {    
+  margin-bottom: 10pt;
+}
+
+.emotions .buttons > li {  
+cursor: pointer;
+}
+
+.emotions .list > li {  
+  margin-bottom: 10pt;
+  cursor: pointer;
+  padding: 5pt;
+  border-radius: 5pt 5pt 5pt 5pt;
+}
+
+.emotions .list > li.active {
+  background: #BEF4F9;
+}
+
+.properties ul{
+  
+	padding: 10pt;
+}
+
+.properties li {
+  
+	margin-bottom: 6pt;
+}
+  
+.properties li label {
+  margin-right: 10pt;
+	display: inline-block;
+	width: 63pt;
+}
+
+.properties li input {
+  
 }

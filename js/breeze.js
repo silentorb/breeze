@@ -235,23 +235,37 @@ var Breeze = (function() {
   
   // Petal is the Breeze wrapper for an individual SVG object, usually a path
   var Petal = Meta_Object.sub_class('Petal', {
+    translate_x: 0,
+    translate_y: 0,
+    rotate: 0,
+    scale_x: 1,
+    scale_y: 1,
+    anchor_x: 0,
+    anchor_y: 0,
     initialize: function() {
       
       this.listen(this, 'disconnect-all', function() {
         this.element.parentNode.removeChild(this.element);
       });
+      
+      this.value = Meta_Object.value;
     },
-    initialize_element: function(element) {
-      var self = this;
-      //      console.log(this.element.getAttribute('d'));
-      //      this.element.addEventListener('click', function(event) {
-      //        self.invoke('click', event);
-      //      }, false);      
-     
-      element.onclick = function(event) {
-        event.stopPropagation();
-        self.invoke('click', event);
-      };  
+    attr: function(name, value) {
+      if (value !== undefined) {
+        this.element.setAttribute(name, value);
+        return value;
+      }
+      
+      return this.element.getAttribute(name);
+    },
+    initialize_element: function(element) { 
+      // Can't get the bounding box until placed on the canvas
+      this.listen(this, 'connect.parent', function() {          
+        var size = this.size();
+        this.anchor_x = size.width / 2;
+        this.anchor_y = size.height / 2;      
+        this.parse_transform();
+      });
     },
     drag: function(action, finished) {
       var element = this.element
@@ -272,6 +286,32 @@ var Breeze = (function() {
         document.addEventListener('mouseup', mouseup, false);
         event.preventBubble();
       }, false);
+    },
+    generate_transform: function() {
+      var result = '';
+      result += 'translate(' + this.translate_x + ',' + this.translate_y + ')';
+      result += 'rotate(' + this.rotate + ',' + this.anchor_x + ',' + this.anchor_y + ')';
+      
+      return result;
+    },
+    size: function() {
+      return this.element.getBBox();
+    },
+    parse_transform: function() {
+      var transform_string = this.attr('transform');
+      if (!transform_string)
+        return;
+      
+      var transforms = transform_string.split(/\s+(?!\()/);
+      for (var x = 0; x < transforms.length; x++) {
+        var transform = transforms[x].match(/(\w+)(.*?([\d\.]+))/);
+        switch (transform[1]) {
+          case 'translate':
+            this.translate_x = transform[2];
+            this.translate_y = transform[3];
+            break;
+        }        
+      }
     }
   });
   
@@ -280,7 +320,7 @@ var Breeze = (function() {
       this.element = source;
       
       this.points = Iris.string_to_points(source.getAttribute('d'));
-      this.original_points = jQuery.extend(true, [], this.points);
+      this.original_points = MetaHub.deep_clone(this.points);
       this.set_path(this.points);
       this.initialize_element(this.element);
     },
@@ -321,7 +361,7 @@ var Breeze = (function() {
     add_initial_key: function() {            
       var key = {
         frame: 0, 
-        data: jQuery.extend(true, [], this.get_original_data())
+        data: MetaHub.deep_clone(this.get_original_data())
       };
       this.keys = [key];    
       this.invoke('add.key', key, this);
@@ -332,12 +372,12 @@ var Breeze = (function() {
         this.insert_key(frame);
       }
       else {
-        key.data = this.clone_current_data();
+        key.data = this.get_current_data();
+        if (typeof key.data == 'object')
+          key.data = MetaHub.deep_clone(key.data);
+        
         this.invoke('modify.key', key, this);
       }
-    },
-    clone_current_data: function() {
-      return jQuery.extend(true, [], this.get_current_data());
     },
     get_current_keys: function(frame, keys) {
       var x;
@@ -373,8 +413,12 @@ var Breeze = (function() {
     
       var key = {
         frame: frame, 
-        data: this.clone_current_data()
+        data: this.get_current_data()
       };
+      
+      if (typeof data == 'object') {
+        key.data = MetaHub.deep_clone(key.data);
+      }
       
       keys.splice(x, 0, key);
       
@@ -391,6 +435,17 @@ var Breeze = (function() {
       };
       
       return result;
+    },
+    update: function(frame, animator) {
+      var duration, keys = this.get_current_keys(frame, this.keys);
+      if (keys.length > 1)
+        duration = keys[1].frame - keys[0].frame;
+      
+      this.internal_update(frame, animator, keys, duration);
+    },
+    update_transform: function() {
+      var transform = this.generate_transform();
+      this.attr('transform', transform);
     }
   });
   
@@ -402,10 +457,8 @@ var Breeze = (function() {
     get_original_data: function() {
       return this.seed.original_points;
     },
-    update: function(frame, animator) {
-      var p, start, end, points = this.seed.points,
-      keys = this.get_current_keys(frame, this.keys),
-      duration;
+    internal_update: function(frame, animator, keys, duration) {
+      var p, start, end, points = this.seed.points;
       
       if (keys.length == 1) {
         for (p = 0; p < points.length; p++) {
@@ -427,28 +480,147 @@ var Breeze = (function() {
       }
       
       this.seed.set_path(points);
+    //      this.attr('transform', this.generate_transform());
+    }
+  });
+  
+  var Double_Target = Animation_Target.sub_class('Double_Target', {
+    property: 'double', // Temporary
+    initialize: function() {
+      this.seed['original_' + this.property] = this.get_current_data();
+    },
+    get_current_data: function() {
+      return this.seed[this.property];
+    },
+    get_original_data: function() {
+      return this.seed['original_' + this.property];
+    },
+    internal_update: function(frame, animator, keys, duration) {
+      var value;
+      if (keys.length == 1) {
+        value = keys[0].data;
+      }
+      else {
+        value = animator.tween(keys[0].data, keys[1].data, frame, duration);
+      }
+      
+      this.seed.value(this.property, value, this.seed);
+      
+      this.seed.update_transform();
+
+    //      this.attr('transform', this.generate_transform());
     }
   });
   
   var Emotion = Meta_Object.sub_class('Emotion', {
     duration: 100,
     frame: 0,
+    name: 'New',
     targets: [],
+    initialize: function() {
+      // In general, do not directly modify the targets array
+      this.optimize_getter('targets', 'target'); 
+    },
+    active: function(value) {
+      var active_emotions = this.parent().active_emotions,
+      x = active_emotions.indexOf(this);
+      
+      if (value !== undefined) {
+        if (value) {
+          if (x == -1) {
+            active_emotions.push(this);
+            this.invoke('active', true);
+          }
+        }
+        else {
+          if (x > -1) {
+            active_emotions.splice(x, 1);
+            this.invoke('active', false);
+          }
+        }
+      }
+    
+      return x > -1;
+    },
+    add_key: function(seed, property) {
+      var target = this.get_target(seed, property);
+      
+      if (!target) {
+        if (property == 'path') {
+          target = Path_Target.create(seed);
+        }
+        else {
+          target = Double_Target.create(seed);
+          target.property = property;
+        }
+        
+//        target.add_initial_key();
+        this.connect(target, 'target', 'parent');
+      }   
+      target.add_key(Breeze.animator.frame);
+    },
+    get_petal_targets: function(petal) {
+      var result = [], targets = this.targets;
+      
+      for (var x = 0; x < targets.length; x++) {
+        if (targets[x].seed === petal)
+          result.push(targets[x]);
+      }
+      
+      return result;
+    },
+    get_target: function(seed, property) {
+      var target, x;
+    
+      for (x = 0; x < this.targets.length; x++) {
+        target = this.targets[x];
+        if (target.seed === seed && target.property == property) {
+          return target;
+        }
+      }      
+      return null;
+    },
+    load: function(data, iris) {
+      var x, targets = data.targets;
+      
+      this.duration = data.duration;
+      this.name = data.name;
+      
+      for (x = 0; x < targets.length; x++) {
+        this.load_target(targets[x], iris.get_petal(data.targets[x].target));
+      }
+    },
+    load_target: function(data, petal) {
+      var target;
+      
+      if (data.property == 'path') {
+        target = Path_Target.create(petal);
+      }
+      else {
+        target = Double_Target.create(petal);
+        target.property = data.property;
+      }
+        
+      target.keys = data.keys;
+      this.connect(target, 'target', 'parent');
+      return target;
+    },
     save: function() {
       var x, targets = [], result = {};
-    
+ 
       for (x = 0; x < this.targets.length; x++) {
         targets.push(this.targets[x].save());
       }
     
-      result.targets = targets;
+      result.name = this.name;
       result.duration = this.duration;
+      result.targets = targets;
       return result;
     },
-    update: function(increment, animator) {
-      this.frame += increment;
+    update: function(frame, animator) {
+      this.frame = frame;
       for (var x = 0; x < this.targets.length; x++) {
-        this.targets[x].update(this.frame, this);
+        this.targets[x].update(this.frame, animator, this);
       }
     }
   });
@@ -469,29 +641,28 @@ var Breeze = (function() {
       });
           
       this.listen(this, 'disconnect.emotion', function(item) {
-        this.emotions.splice(this.emotions.indexOf(item), 1);
-        var x = this.active_emotions.indexOf(item);
-        if (x > -1)
-          this.active_emotions.splice(x, 1);
+        item.active(false);
+        this.emotions.splice(this.emotions.indexOf(item), 1);        
       });
     },
-    add_key: function(seed, property) {
-      var target = this.get_target(seed, property);
-      
-      if (!target) {
-        if (property == 'path') {
-          target = Path_Target.create(seed);
-          target.add_initial_key();
-          this.connect(target, 'target', 'parent');
-        }
-      }      
-      target.add_key(Breeze.animator.frame);
+    create_emotion: function() {
+      var emotion = Emotion.create();
+      emotion.animator = this;
+      this.connect(emotion, 'emotion', 'parent');
+      return emotion;
     },
     load: function(data, iris) {
-      var x, targets = data.targets;
+      var x, targets = data.targets || [], emotions = data.emotions || [];
        
       for (x = 0; x < targets.length; x++) {
         this.load_target(targets[x], iris.get_petal(data.targets[x].target));
+      }
+      
+      for (x = 0; x < emotions.length; x++) {
+        var emotion = Emotion.create();
+        emotion.animator = this;
+        emotion.load(emotions[x], iris);
+        this.connect(emotion, 'emotion', 'parent');
       }
     },
     load_target: function(data, petal) {
@@ -504,16 +675,6 @@ var Breeze = (function() {
       target.keys = data.keys;
       this.connect(target, 'target', 'parent');
       return target;
-    },
-    get_target: function(seed, property) {
-      var target, x;
-      for (x = 0; x < this.targets.length; x++) {
-        target = this.targets[x];
-        if (target.seed === seed && target.property == property) {
-          return target;
-        }
-      }      
-      return null;
     },
     next: function() {
       if (this.frame && this.frame >= this.duration) {
@@ -544,14 +705,14 @@ var Breeze = (function() {
     tween: function(start, end, time, duration) {
       return start + ((end - start) * time / duration);
     },
-    update: function() {    
+    update: function() {
       //      document.getElementById('log').innerHTML = (animator.frame / 100);
       for (var x = 0; x < this.targets.length; x++) {
         this.targets[x].update(this.frame, this);
       }
       
-      for (var x = 0; x < this.emotions.length; x++) {
-        this.active_emotions[x].update(1, this);
+      for (var x = 0; x < this.active_emotions.length; x++) {
+        this.active_emotions[x].update(this.frame, this);
       }
       
       this.invoke('update');
