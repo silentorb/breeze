@@ -1,0 +1,68 @@
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title></title>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+  </head>
+  <body>
+    <div id="count" style="width:100px;height:30px; padding:5pt; font-size: 16pt;"></div>
+    <canvas id="canvas" width="900" height="700" style="margin-top:30px;"></canvas>    
+    <script>
+      $(function() {
+        var rectangles = [];
+        var canvas=document.getElementById("canvas");
+        var ctx=canvas.getContext("2d");
+        var count = $('#count');
+        function add_rectangle() {
+          var result = {};
+          result.x = Math.random() * 800;
+          result.y = Math.random() * 600;
+          result.rotate = 0;
+          rectangles.push(result);
+        }
+      
+        $(canvas).click(function() {
+          add_rectangle();
+          add_rectangle();
+          add_rectangle();
+          add_rectangle();
+          add_rectangle();
+          count.text(rectangles.length);
+        });
+      
+        add_rectangle();
+        add_rectangle();
+        add_rectangle();
+        add_rectangle();
+        add_rectangle();
+        count.text(rectangles.length);
+
+        setInterval(function() {
+          
+          ctx.save();
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          // Will always clear the right space
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.restore();
+          ctx.fillStyle="blue";
+          for (var x = 0; x < rectangles.length; ++x) {
+            ctx.save();
+            ctx.translate(rectangles[x].x, rectangles[x].y);
+            rectangles[x].rotate = (rectangles[x].rotate + 1) % 356;
+            ctx.rotate(rectangles[x].rotate);
+            ctx.fillRect(-100,-100,100,100);
+            ctx.strokeRect(-100,-100,100,100);
+            //            ctx.fill();
+            //            ctx.stroke();
+            ctx.restore();
+          }
+        }, 1000 / 60);
+      });
+    </script>
+  </body>
+
+</html>
