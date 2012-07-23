@@ -104,8 +104,13 @@ ul.horizontal.tabs > li.active {
   background: white;
 }
 
-.emotions {
+.container > * {
   padding: 10pt;
+}
+
+.container {
+  overflow-y: scroll;
+  height: 236pt;
 }
 
 .emotions .buttons {    
@@ -116,14 +121,27 @@ ul.horizontal.tabs > li.active {
   cursor: pointer;
 }
 
-.emotions .list > li {  
-  margin-bottom: 10pt;
+.item-list > li {  
+  margin-bottom: 6pt;
   cursor: pointer;
-  padding: 5pt;
   border-radius: 5pt 5pt 5pt 5pt;
 }
 
-.emotions .list > li.active {
+ul.tree li {
+  margin-bottom: 6pt;
+  cursor: pointer;
+  border-radius: 5pt 5pt 5pt 5pt;
+}
+
+.tree ul {
+  margin-left: 20pt;
+}
+
+.tree li.selected {
+  background: #BEF4F9;
+}
+
+.item-list > li.selected {
   background: #BEF4F9;
 }
 
@@ -159,12 +177,12 @@ ul.horizontal.tabs > li.active {
   border: 2pt solid #BABABA;
   border-radius: 4pt;
   cursor: pointer;
-	margin-right: 4pt;
+  margin-right: 4pt;
 }
 
 .live.active {
   background: url('../images/runner.png');
   background-size: 15pt 15pt;
-	opacity: 1;
-	border-color: #C10000;
+  opacity: 1;
+  border-color: #C10000;
 }

@@ -9,13 +9,23 @@ MetaHub.extend(Breeze.animator, {
       }
     });
     
-    this.listen(this, 'change.current_emotion', function(emotion) {
+    var selection = this.emotion_selection = Meta_Object.create();
+    selection.active_emotions = this.active_emotions;
+    selection.optimize_getter('active_emotions', 'selected');
+    
+    this.listen(selection, 'connect.selected', function(emotion) {
       for (var x = 0; x < Breeze.animator.active_emotions.length; ++x) {
         this.active_emotions[x].active(false);
       }
       
       this.value('duration', emotion.duration);
       emotion.active(true);
+      Breeze.animator.current_emotion = emotion;
+      
+      var petals = Page.canvas.iris.objects;
+      for (var x = 0; x < petals.length; ++x) {
+        petals[x].reset();
+      }
       this.update();
     });
   },
@@ -56,30 +66,33 @@ MetaHub.extend(Breeze.Petal.properties, {
   },
   initialize_dragging: function() {
     var self = this, last;
-    // The canvas deselects all if any clicks reach it.    
-    this.drag(function(event) { 
-      var point = Page.canvas.iris.convert_client_point(event.clientX - last.x, event.clientY - last.y);
+    // The canvas deselects all if any clicks reach it.   
+    if (this.points) {
+      this.drag(function(event) { 
+        var point = Page.canvas.iris.convert_client_point(event.clientX - last.x, event.clientY - last.y);
+        event.preventBubble();
+        event.stopPropagation();  
 
-      point = self.convert_to_local(point);
-      self.value('translate_x', self.translate_x + event.clientX - last.x);
-      self.value('translate_y', self.translate_y + event.clientY - last.y);
+        point = self.convert_to_local(point);
+        self.value('position.x', self.position.x + event.clientX - last.x);
+        self.value('position.y', self.position.y + event.clientY - last.y);
       
-      last = {
-        x: event.clientX,
-        y: event.clientY
-      }
-    }, function() {      
-      if (Breeze.animator.is_recording) {
-        Breeze.animator.add_key(self, 'translate_x');
-        Breeze.animator.add_key(self, 'translate_y');
-      }
-    }, function(event) {  
-      last = {
-        x: event.clientX,
-        y: event.clientY
-      }
-    });
-    
+        last = {
+          x: event.clientX,
+          y: event.clientY
+        }
+      }, function() {      
+        if (Breeze.animator.is_recording) {
+          Breeze.animator.add_key(self, 'position.x');
+          Breeze.animator.add_key(self, 'position.y');
+        }
+      }, function(event) {  
+        last = {
+          x: event.clientX,
+          y: event.clientY
+        }
+      });
+    }
   },
   update_transform: function() {
     var transform = this.generate_transform();

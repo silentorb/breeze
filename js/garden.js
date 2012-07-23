@@ -1,18 +1,17 @@
 "use strict";
-
 MetaHub.import_all(); 
 Bloom.import_all();
 Breeze.import_all();
 
 var Page = {
   iris_properties: {
-    translate_x: 'double',
-    translate_y: 'double',
-    rotate: 'double',
-    scale_x: 'double',
-    scale_y: 'double',
-    anchor_x: 'double',
-    anchor_y: 'double'
+    'position.x': 'double',
+    'position.y': 'double',
+    'rotate': 'double',
+    'scale.x': 'double',
+    'scale.y': 'double',
+    'anchor.x': 'double',
+    'anchor.y': 'double'
   },
   history: [],
   project: null,
@@ -28,7 +27,7 @@ var Page = {
     this.properties = Properties_Panel.create();
     $('.properties.panel').append(this.properties.element);
     
-    this.load_iris('deevee2.svg');
+    this.load_iris('deevee3.svg');
   },
   initialize_project_panel: function() {
     this.project_panel = Tab_Panel.create();
@@ -40,7 +39,7 @@ var Page = {
     emotions.title = "Emotions";
     this.project_panel.connect(scene, 'child', 'parent');
     this.project_panel.connect(emotions, 'child', 'parent');
-    this.project_panel.set_tab(emotions);
+    this.project_panel.set_tab(scene);
   },
   create_canvas: function() {
     var self = this;
@@ -54,12 +53,8 @@ var Page = {
     this.canvas = Canvas.create(canvas);
     this.connect(this.canvas, 'child', 'parent');
     
-    this.listen(Breeze.animator, 'change.current_emotion', function(emotion) {
-      var petals = this.canvas.iris.get_connections('child');
-      for (var x = 0; x < petals.length; ++x) {
-        petals[x].reset();
-      }
-    });
+    this.canvas.iris.layers[0].setAttribute('transform', 'scale(0.8, 0.8) translate(200, 0)');
+    this.canvas.iris.layers[1].setAttribute('transform', 'scale(0.8, 0.8) translate(200, 0)');
   },
   create_menu: function() {
     var menu = Menu.create();
@@ -71,16 +66,25 @@ var Page = {
     $(window).keypress(function(event) {
       var control = event.metaKey || event.ctrlKey;
       var used = true;
-      
+      console.log('charCode: ' + event.charCode + ', keyCode: ' + event.keyCode);
+   
       switch(event.charCode) {
         case 32:
-            event.preventDefault();
+          event.preventDefault();
           if (Breeze.animator.is_playing) {
             Breeze.animator.stop();
           }
           else {
             Breeze.animator.play(Breeze.animator.frame);
           }
+          break;
+        case 91:
+          Page.timeline.graph.goto_previous_key();
+          event.preventDefault();     
+          break;
+        case 93:
+          Page.timeline.graph.goto_next_key();
+          event.preventDefault();      
           break;
         case 100:
           Page.timeline.graph.delete_selection();
@@ -91,10 +95,18 @@ var Page = {
             Breeze.animator.add_key(selection[x]);
           }
           break;
-          case 122: // z
-              if (control) {
+        case 112:
+          var channels = Breeze.animator.active_channels;
+          var index = channels.indexOf('path');
+          if (index == -1)
+            channels.push('path');
+          else
+            channels.splice(index, 1);
+          break;
+        case 122: // z
+          if (control) {
                   
-              }
+          }
           break;
         default:
           used = false;    
@@ -149,10 +161,14 @@ var Page = {
     jQuery.get('projects/' + filename, function(response) {
       self.create_canvas();
       self.canvas.load(response);
-      return;
+      self.invoke('load', Page.canvas.iris);
+      //            Breeze.animator.create_emotion();
+      //          return;
       
-      jQuery.get('projects/' + 'test3.brz', function(response2) {
+      jQuery.get('projects/' + 'deevee.brz', function(response2) {
         Breeze.animator.load(response2, self.canvas.iris);
+        Breeze.animator.emotion_selection.connect(Breeze.animator.emotions[0], 'selected', 'selection');
+
         //        var animator = Breeze.animator;
         //        var emotion = Emotion.create();
         //        animator.connect(emotion, 'emotion', 'parent');
@@ -213,41 +229,43 @@ var Project = Meta_Object.sub_class('Project', {
   }
 });
 
-var Selection = Meta_Object.sub_class('Selection', {
-  add: function(item) {
-    if (this.connection(item))
-      return;
-    
-    this.disconnect_all('selected');    
-    this.connect(item, 'selected', 'selection');
-  },
-  remove: function(item) {
-    this.disconnect(item);
+var Scene_Item = Flower.sub_class('Scene_Item', {
+  initialize: function() {
+    this.element = $('<li>' + this.seed.element.id + '</li>');
   }
 });
 
-var Scene_Panel = Flower.sub_class('Scene_Panel', {
+var Scene_Panel = Tree.sub_class('Scene_Panel', {
   block: 'scene',
-    initialize: function() {
-      //this.tree = Tree.create('<ul></ul>');
-      //this.tree.watch_seed('child', Page.canvas.iris);
-    }
+  item_type: Scene_Item,
+  initialize: function() {
+    this.listen(Page, 'load', this.load);
+    this.make_selectable(Page);
+  },
+  load: function(iris) {
+    this.element.empty();
+    this.watch_seed('child', iris.root);
+  }
 });
 
+new Block('emotion', '<li></li>');
+
 var Emotion_Flower = Flower.sub_class('Emotion_Flower', {
+  block: 'emotion',
   initialize: function() {
     var self = this;
-    this.element = $('<li>' + this.seed.name + '</li>');
+    this.element.text(this.seed.name);
+    /*
     if (this.seed.active()) {
-      this.element.addClass('active');
+      this.element.addClass('selected');
     }
     
-    this.listen(this.seed, 'active', function(active) {
+    this.listen(this.seed, 'selected', function(active) {
       if (active) {
-        this.element.addClass('active');
+        this.element.addClass('selected');
       }
       else {
-        this.element.removeClass('active');
+        this.element.removeClass('selected');
       }
     });
     
@@ -256,7 +274,7 @@ var Emotion_Flower = Flower.sub_class('Emotion_Flower', {
         Breeze.animator.value('current_emotion', this.seed, this);
       }
     });
-    
+    */
     this.element.dblclick(function() {
       Bloom.edit_text(self.element, function(value) {
         self.seed.name = value;
@@ -268,19 +286,19 @@ var Emotion_Flower = Flower.sub_class('Emotion_Flower', {
 var Emotion_List = List.sub_class('Emotion_List', {
   block: 'list',
   item_type: Emotion_Flower,
-  initialize: function() {    
+  initialize: function() {
+    this.make_selectable(Breeze.animator.emotion_selection);
     this.watch_seed('emotion');
-    
   }
 });
 
-var Emotions_Panel = List.sub_class('Emotions_Panel', {
+var Emotions_Panel = Flower.sub_class('Emotions_Panel', {
   block: 'emotions',
   initialize: function() {
     var self = this;
-    this.list = Emotion_List.create(this.seed, this.element.find('.list'));
+    this.list = Emotion_List.create(this.seed, this.element.find('.item-list'));
     this.element.find('.buttons li').click(function() {
-      Breeze.animator.create_emotion(this.seed);
+      Breeze.animator.create_emotion();
     });       
   }
 });
@@ -348,7 +366,7 @@ var Canvas = Flower.sub_class('Canvas', {
     var height = this.element.height();
     this.iris = Iris.create(this.element[0],width, height);
     
-    this.listen(this.iris, 'connect.child', this.initialize_petal);      
+    this.listen(this.iris, 'connect.object', this.initialize_petal);      
     this.listen(Page, 'connect.selected', this.petal_selected);
     this.listen(Page, 'disconnect.selected', this.petal_deselected);
       
@@ -363,7 +381,7 @@ var Canvas = Flower.sub_class('Canvas', {
   initialize_petal: function (petal) {
     this.listen(petal, 'click', function() {
       Page.disconnect_all('selected');
-      Page.connect(petal, 'selected', 'page');
+      Page.connect(petal, 'selected', 'selection');
     });
     
     petal.initialize_more();
@@ -415,6 +433,7 @@ var Timeline_Marker = Flower.sub_class('Timeline_Marker', {
 });
 
 var Keyframe_Marker = Timeline_Marker.sub_class('Keyframe_Marker', {
+  keys: [],
   initialize: function() {
     this.drag({
       owner: this,
@@ -433,12 +452,16 @@ var Keyframe_Marker = Timeline_Marker.sub_class('Keyframe_Marker', {
   move_position: function(event) {
     var x = event.clientX - this.element.parent().offset().left;
     x = Math.max(0, x);    
-    this.key.frame = x * Breeze.animator.duration / this.element.parent().width();
-    this.set_position(this.key.frame);
+    var frame = Math.round(x * Breeze.animator.duration / this.element.parent().width());
+    for (x = 0; x < this.keys.length; x++) {
+      this.keys[x].frame = frame;
+    }
+    this.set_position(frame);
     
     event.bubbles = false;
     event.stopPropagation();
-    this.parent().selection.add(this);
+    this.parent().selection.disconnect_all();
+    this.parent().selection.connect(this, 'selected', 'selection');
     Breeze.animator.update();
   }
 });
@@ -447,7 +470,7 @@ var Timeline_Graph = Flower.sub_class('Timeline_Graph', {
   initialize: function() {
     Breeze.animator.set_frame(30);
     this.position = this.add_marker('current', Breeze.animator.frame);
-    this.selection = Selection.create();
+    this.selection = Meta_Object.create();
     this.connect(this.selection, 'selection', 'parent');
     
     this.listen(Breeze.animator, 'update', function() {
@@ -474,12 +497,15 @@ var Timeline_Graph = Flower.sub_class('Timeline_Graph', {
     return marker;
   },
   add_keyframe_marker: function(key, target) {
+    var marker = this.get_keyframe(key.frame);
     
-    var marker = Keyframe_Marker.create();
+    if (!marker)
+      marker = Keyframe_Marker.create();
+  
     marker.element.addClass('keyframe');    
     this.connect(marker, 'keyframe', 'parent');
     marker.set_position(key.frame);
-    marker.key = key;
+    marker.keys.push(key);
     this.element.append(marker.element);
     marker.connect(target, 'source', 'timeline_marker');  
   },
@@ -490,14 +516,27 @@ var Timeline_Graph = Flower.sub_class('Timeline_Graph', {
     this.position.set_position(Breeze.animator.frame);
   },
   delete_selection: function() {
-    var selected = this.selection.get_connections('selected');
+    var x, y, selected = this.selection.get_connections('selected');
     for (var x = 0; x < selected.length; x++) {
       var marker = selected[x];
-      marker.get_connection('source').remove_key(marker.key);
+      var source = marker.get_connection('source');
+      for (y = 0; y < marker.keys.length; y++) {
+        source.remove_key(marker.keys[y]);
+      }
       marker.disconnect_all();
     }
     
     Breeze.animator.update();
+  },
+  get_keyframe: function(frame) {    
+    var markers = this.get_connections('keyframe');
+
+    for (var x = 0; x < markers.length; x++) {
+      if (markers[x].frame == frame)
+        return markers[x];
+    }
+      
+    return null;
   },
   goto_previous_key: function() {    
     var frame = Breeze.animator.frame;

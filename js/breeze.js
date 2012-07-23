@@ -5,6 +5,21 @@ if (!window.Breeze)
   'use strict';
   MetaHub.current_module = Breeze;
   var Meta_Object = MetaHub.Meta_Object;
+    
+  window.Point = Breeze.Point = {
+    create: function(x, y) {
+      return {
+        x: x,
+        y: y
+      };  
+    },
+    add: function(a, b) {
+      return {
+        x: a.x + b.x,
+        y: a.y + b.y
+      };
+    }
+  };
   
   var Animation_Target = Meta_Object.sub_class('Animation_Target', {
     keys: [],
@@ -130,7 +145,8 @@ if (!window.Breeze)
         }
       }
       
-      this.seed.set_path(points);
+      if (this.seed.set_path)
+        this.seed.set_path(points);
     //      this.attr('transform', this.generate_transform());
     }
   });
@@ -141,7 +157,7 @@ if (!window.Breeze)
       this.seed['original_' + this.property] = this.get_current_data();
     },
     get_current_data: function() {
-      return this.seed[this.property];
+      return this.seed.value(this.property);
     },
     get_original_data: function() {
       return this.seed['original_' + this.property];
@@ -157,7 +173,8 @@ if (!window.Breeze)
       
       this.seed.value(this.property, value, this.seed);
       
-      this.seed.update_transform();
+      if (this.seed.update_transform)
+        this.seed.update_transform();
 
     //      this.attr('transform', this.generate_transform());
     }
@@ -168,6 +185,8 @@ if (!window.Breeze)
     frame: 0,
     name: 'New',
     targets: [],
+    mode: 'global',
+    loop: false,
     initialize: function() {
       // In general, do not directly modify the targets array
       this.optimize_getter('targets', 'target');
@@ -209,7 +228,7 @@ if (!window.Breeze)
         //        target.add_initial_key();
         this.connect(target, 'target', 'parent');
       }   
-      target.add_key(Breeze.animator.frame);
+      target.add_key(Math.round(Breeze.animator.frame));
     },
     get_petal_targets: function(petal) {
       var result = [], targets = this.targets;
@@ -266,7 +285,18 @@ if (!window.Breeze)
       return target;
     },
     update: function(frame, animator) {
-      this.frame = frame;
+      if (this.mode == 'global') {
+        this.frame = frame;
+      }
+      else {
+        if (this.last_frame === undefined) {
+          this.last_frame = frame - 1;
+        }
+        this.frame += frame - this.last_frame;
+        this.last_frame = frame;
+        if (this.loop)
+          this.frame = this.frame % this.duration;
+      }
       for (var x = 0; x < this.targets.length; x++) {
         this.targets[x].update(this.frame, animator, this);
       }
@@ -300,6 +330,9 @@ if (!window.Breeze)
       var emotion = Emotion.create();
       emotion.animator = this;
       this.connect(emotion, 'emotion', 'parent');
+      if (this.active_emotions.length == 0) {
+        this.emotion_selection.connect(emotion, 'selected', 'selection');
+      }
       return emotion;
     },
     load: function(data, iris) {

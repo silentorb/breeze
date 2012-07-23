@@ -3,11 +3,11 @@ if (!window.Breeze)
 
 (function(Breeze) {
  
-   var Iris = Meta_Object.sub_class('Iris', {
+  var Iris = Meta_Object.sub_class('Iris', {
     layers: [],
     initialize: function(element, width, height) {
       
-      this.optimize_getter('objects', 'child');
+      this.optimize_getter('objects', 'object');
       
       if (typeof element == 'string') {
         element = document.getElementById(element);
@@ -25,9 +25,9 @@ if (!window.Breeze)
       this.create_layer('paper');
       this.create_layer('overlay');
       
-      this.listen(this, 'connect.child', function(child) {
-        this.element.getElementsByClassName('paper')[0].appendChild(child.element);
-      });
+    //      this.listen(this, 'connect.child', function(child) {
+    //        this.element.getElementsByClassName('paper')[0].appendChild(child.element);
+    //      });
       this.listen(this, 'connect.overlay', function(child) {
         this.element.getElementsByClassName('overlay')[0].appendChild(child.element);
       });
@@ -46,7 +46,7 @@ if (!window.Breeze)
       this.layers.push(layer);
     },
     get_petal: function(id) {
-      var petals = this.get_connections('child');
+      var petals = this.get_connections('object');
       for (var x = 0; x < petals.length; x++) {
         if (petals[x].element.id == id)
           return petals[x];
@@ -61,24 +61,34 @@ if (!window.Breeze)
           this.defs.appendChild(defs[x].children[y]);
         }
       }
-          
-      //      var layers = data.getElementsByTagName('g');
 
+      var svg = $(data).find('svg');
+      this.root = this.load_element(svg[0]);
+      var children = svg.children();
+      var paper = this.element.getElementsByClassName('paper')[0];
+      for (x = 0; x < children.length; x++) {
+        paper.appendChild(children[x]);
+      }
+    },
+    load_element: function(element) {
+      var type = Iris.element_types[element.nodeName];
+      if (!type)
+        return;
       
-      var nodes = data.getElementsByTagName('*');
-      var elements = [];
-      for (var x = 0; x < nodes.length; x++) {
-        elements.push(nodes[x]);
+      var petal = type.create(element);
+      this.connect(petal, 'object', 'iris');
+        
+      var elements = $(element).children(); 
+      for (var x = 0; x < elements.length; x++) {
+        var child = this.load_element(elements[x]);
+        if (child) {
+          petal.connect(child, 'child', 'parent');
+          element.appendChild(child.element);
+        }
       }
       
-      for (var x = 0; x < elements.length; x++) {
-        var type = Iris.element_types[elements[x].nodeName];
-        if (type) {
-          var petal = type.create(elements[x]);
-          this.connect(petal, 'child', 'parent');
-        }
-      }      
-    }    
+      return petal;
+    }
   });
   
   // Iris is the Breeze wrapper for an SVG Canvas
@@ -251,19 +261,18 @@ if (!window.Breeze)
         
   // Petal is the Breeze wrapper for an individual SVG object, usually a path
   var Petal = Meta_Object.sub_class('Petal', {
-    translate_x: 0,
-    translate_y: 0,
+    position: Point.create(0, 0),
     rotate: 0,
-    scale_x: 1,
-    scale_y: 1,
-    anchor_x: 0,
-    anchor_y: 0,
+    scale: Point.create(1, 1),
+    anchor: Point.create(0, 0),
     initialize: function() {      
       this.listen(this, 'disconnect-all', function() {
-        this.element.parentNode.removeChild(this.element);
+        if (this.element.parentNode)
+          this.element.parentNode.removeChild(this.element);
       });
       
-      this.value = Meta_Object.value;
+      this.position = Point.create(0, 0);
+      this.value = Meta_Object.deep_value;
     },
     attr: function(name, value) {
       if (value !== undefined) {
@@ -284,14 +293,15 @@ if (!window.Breeze)
         }
         else {
         //          var size = this.size();
-        //          this.anchor_x = size.width / 2;
-        //          this.anchor_y = size.height / 2;      
+        //          this.anchor.x = size.width / 2;
+        //          this.anchor.y = size.height / 2;      
         //          this.parse_transform();
         }        
       });
     },
     convert_to_local: function(point) {
-      var globalToLocal = this.element.getTransformToElement(this.parent().element).inverse();
+      var canvas = this.get_connection('iris').element;
+      var globalToLocal = this.element.getTransformToElement(canvas).inverse();
       return point.matrixTransform( globalToLocal );
     },
     drag: function(action, finished, start) {
@@ -320,14 +330,14 @@ if (!window.Breeze)
     },
     generate_transform: function() {
       var result = '';
-      if (this.translate_x || this.translate_y)
-        result += 'translate(' + this.translate_x + ',' + this.translate_y + ')';
+      if (this.position.x || this.position.y)
+        result += 'translate(' + this.position.x + ',' + this.position.y + ')';
     
       if (this.rotate)
-        result += 'rotate(' + this.rotate + ',' + this.anchor_x + ',' + this.anchor_y + ')';
+        result += 'rotate(' + this.rotate + ',' + this.anchor.x + ',' + this.anchor.y + ')';
       
-      if (this.scale_x != 1 || this.scale_y != 1)
-        result += 'scale(' + this.scale_x + ',' + this.scale_y + ')';
+      if (this.scale.x != 1 || this.scale.y != 1)
+        result += 'scale(' + this.scale.x + ',' + this.scale.y + ')';
     
       return result;
     },
@@ -346,8 +356,8 @@ if (!window.Breeze)
       center.x /= points.length;
       center.y /= points.length;
       
-      this.translate_x += center.x;
-      this.translate_y += center.y;
+      this.position.x += center.x;
+      this.position.y += center.y;
       
       for (x = 0; x < points.length; x++) {
         points[x].x -= center.x;
@@ -366,19 +376,19 @@ if (!window.Breeze)
         var transform = transforms[x].match(/(\w+)(.*?([\d\.]+))/);
         switch (transform[1]) {
           case 'translate':
-            this.translate_x = parseFloat(transform[2]);
-            this.translate_y = parseFloat(transform[3]);
+            this.position.x = parseFloat(transform[2]);
+            this.position.y = parseFloat(transform[3]);
             break;
           case 'rotate':
             this.rotate = parseFloat(transform[0]);
             if (transform[1])
-              this.anchor_x = parseFloat(transform[1]);
+              this.anchor.x = parseFloat(transform[1]);
             if (transform[2])
-              this.anchor_y = parseFloat(transform[2]);
+              this.anchor.y = parseFloat(transform[2]);
             break;
           case 'scale':
-            this.scale_x = parseFloat(transform[2]);
-            this.scale_y = parseFloat(transform[3]);
+            this.scale.x = parseFloat(transform[2]);
+            this.scale.y = parseFloat(transform[3]);
             break;
         }        
       }
@@ -423,7 +433,46 @@ if (!window.Breeze)
       this.element.setAttribute('d', text);
     }
   });
+        
+  var Polyline = Petal.sub_class('Polyline', {
+    initialize: function(source) {
+      this.element = source;
       
+      this.points = Polyline.string_to_points(source.getAttribute('points'));
+      this.original_points = MetaHub.clone(this.points);
+      this.set_path(this.points);
+      this.initialize_element(this.element);
+    },
+    set_path: function(points) {
+      points = points || this.points;
+      
+      var text = '';
+      for (var x = 0; x < points.length; x++) {
+        text += ' ' + points[x].x + ',' + points[x].y;
+      }
+      this.element.setAttribute('points', text);
+    }
+  });
+  
+  Polyline.string_to_points = function(text) {
+    var points = [], numbers = text.match(/\-?[\d\.]+/g);
+    
+    for (var x = 0; x < numbers.length; x += 2) {
+      points.push({
+        x: parseFloat(numbers[x]),
+        y: parseFloat(numbers[x + 1])
+      });
+    }
+    
+    return points;
+  }
+  
+  var Group = Petal.sub_class('Group', {
+    initialize: function(source) {
+      this.element = source;
+    }
+  });
+  
   var Circle = Petal.sub_class('Circle', {
     initialize: function(cx, cy, radius) {
       var element = this.element = Iris.create_element('circle');      
@@ -439,6 +488,8 @@ if (!window.Breeze)
     'path': Path,
     'polyline': Polyline,
     'polygon': Polyline,
-    'line': Line
+    'line': Line,
+    'g': Group,
+    'svg': Group
   };
 })(Breeze);
