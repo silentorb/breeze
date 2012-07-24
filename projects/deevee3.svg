@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="283.648px" height="432.919px" viewBox="0 0 283.648 432.919" enable-background="new 0 0 283.648 432.919"
+	 xml:space="preserve">
+<polyline id="left-arm" fill="none" stroke="#000000" stroke-width="19.5331" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+	91.121,190.722 100.996,242.635 112.372,282.378 "/>
+<polyline id="left-leg" fill="none" stroke="#000000" stroke-width="19.5331" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+	93.589,295.224 104.107,349.399 108.401,398.982 "/>
+<polyline id="right-leg" fill="none" stroke="#000000" stroke-width="19.5331" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+	68.469,311.083 68.82,362.17 65.088,413.256 "/>
+<polygon id="left-hand" fill="#FEE1CC" stroke="#000000" stroke-width="7.5127" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+	88.332,263.523 114.625,252.255 127.397,283.057 107.863,298.832 92.087,286.813 100.351,279.299 "/>
+<g id="body">
+	
+		<polygon id="shirt" fill="#C8E8E4" stroke="#000000" stroke-width="7.5127" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+		39.17,166.089 127.397,173.767 131.576,241.965 142.614,303.57 18.655,311.083 31.658,231.45 	"/>
+	
+		<polyline id="collar" stroke="#000000" stroke-width="7.5127" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+		132.253,299.813 124.583,194.441 127.397,173.767 39.17,166.089 124.583,194.441 	"/>
+</g>
+<polyline id="right-arm" fill="none" stroke="#000000" stroke-width="19.5331" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+	76.196,190.722 59.783,236.551 66.956,282.378 "/>
+<polygon id="left-foot" fill="#C7E7E3" stroke="#000000" stroke-width="7.5127" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+	92.151,407.059 146.355,407.059 163.636,423.586 84.419,423.586 "/>
+<polygon id="right-foot" fill="#C7E7E3" stroke="#000000" stroke-width="7.5127" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+	115.071,407.622 124.838,423.022 40.695,421.896 54.219,407.622 "/>
+<polygon id="right-hand" fill="#FEE1CC" stroke="#000000" stroke-width="7.5127" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+	86.851,286.208 62.06,271.934 50.792,286.208 61.585,314.01 83.095,318.512 83.847,302.376 "/>
+<g id="head">
+	
+		<line opacity="0" fill="#FFFFFF" stroke="#000000" stroke-width="7.5127" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" x1="122.524" y1="66.168" x2="122.524" y2="94.901"/>
+	
+		<polygon id="face" fill="#FEE2CD" stroke="#000000" stroke-width="7.5127" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+		36.333,48.721 36.333,105.235 51.189,155.571 80.635,163.834 114.875,161.748 121.475,104.484 121.475,48.721 	"/>
+	
+		<polygon id="hair" stroke="#000000" stroke-width="7.5127" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+		32.408,15.333 126.317,15.333 121.475,48.721 36.333,48.721 	"/>
+	<polygon id="nose-fix" fill="#FEE1CC" points="116.315,85.994 130.115,115.106 112.836,117.734 	"/>
+	
+		<polyline id="nose" fill="#FEE1CC" stroke="#000000" stroke-width="7.5127" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="
+		121.475,88.874 136.224,117.734 121.021,120.177 	"/>
+	
+		<line id="right-eye" fill="#FFFFFF" stroke="#000000" stroke-width="7.5127" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" x1="96.595" y1="66.168" x2="96.595" y2="94.901"/>
+</g>
+</svg>
