@@ -266,7 +266,9 @@ if (!window.Breeze)
         else {
           target = iris.get_petal(channel.target);
         }
-        this.load_target(channel, target);
+      
+        if (target)
+          this.load_target(channel, target);
       }
     },
     load_target: function(data, petal) {
@@ -285,18 +287,21 @@ if (!window.Breeze)
       return target;
     },
     update: function(frame, animator) {
-      if (this.mode == 'global') {
-        this.frame = frame;
-      }
-      else {
-        if (this.last_frame === undefined) {
-          this.last_frame = frame - 1;
+      if (!this.freeze) {
+        if (this.mode == 'global') {
+          this.frame = frame;
         }
-        this.frame += frame - this.last_frame;
-        this.last_frame = frame;
-        if (this.loop)
-          this.frame = this.frame % this.duration;
+        else {
+          if (this.last_frame === undefined) {
+            this.last_frame = frame - 1;
+          }
+          this.frame += frame - this.last_frame;
+          this.last_frame = frame;
+          if (this.loop)
+            this.frame = this.frame % this.duration;
+        }
       }
+      
       for (var x = 0; x < this.targets.length; x++) {
         this.targets[x].update(this.frame, animator, this);
       }

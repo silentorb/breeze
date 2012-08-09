@@ -116,13 +116,25 @@ if (!window.Breeze)
     target.top = y1 - center_y;
   };
 
+  Breeze.normalize_transform = function(target) {
+    var child, children = target.children;
+    var offset = {
+      x: -(target.width / 2) - target.left,
+      y: -(target.height / 2) - target.top
+    };
+    for (var x = 0; x < children.length; x++) {
+      child = children[x];
+      child.offset = offset;
+    }    
+  };
+  
   var Petal = Meta_Object.sub_class('Petal', {
     rotate: 0,
     initialize: function(source) {     
-      this.position = Point.create();
+      this.position = Point.create(0, 0);
       this.scale = Point.create(1, 1);
       this.anchor = Point.create(0,0);
-      this.value = Meta_Object.deep_value;         
+      this.value = Meta_Object.deep_value;
     }
   });
   
@@ -130,11 +142,40 @@ if (!window.Breeze)
     initialize: function(source) {
       if (source)
         MetaHub.extend(this, source);
-    
+      
+      this.normalize();  
     },
     convert_to_local: function(point) {
       var globalToLocal = this.element.getTransformToElement(this.parent().element).inverse();
       return point.matrixTransform( globalToLocal );
+    },
+    normalize: function() {
+      var x, points = this.points;
+      if (!points || points.length == 0)
+        return;
+      
+      var center = {
+        x: points[0].x,
+        y: points[0].y
+      }
+      
+      for (x = 1; x < points.length; x++) {
+        center.x += points[x].x;  
+        center.y += points[x].y;
+      }
+      
+      center.x /= points.length;
+      center.y /= points.length;
+      
+      this.position.x += center.x;
+      this.position.y += center.y;
+      
+      for (x = 0; x < points.length; x++) {
+        points[x].x -= center.x;
+        points[x].y -= center.y;
+      }
+      
+      return center;
     }
   });
   
@@ -142,6 +183,12 @@ if (!window.Breeze)
     var x, points = shape.points;
     canvas.save();
         
+    if (shape.name == 'left-foot')
+      debug_point(shape.position);
+
+    if (shape.offset)
+      canvas.translate(shape.offset.x, shape.offset.y);
+    
     if (shape.position)
       canvas.translate(shape.position.x, shape.position.y);
     
@@ -149,7 +196,7 @@ if (!window.Breeze)
       canvas.scale(shape.scale.x, shape.scale.y);
     
     if (shape.rotate != undefined && shape.rotate != 0)
-      canvas.rotate(shape.rotate);
+      canvas.rotate(Math.PI / shape.rotate);
   
     if (points) {
       canvas.beginPath();
@@ -238,6 +285,9 @@ if (!window.Breeze)
       Iris.get_child_ids(this, this.objects);
     },
     get_petal: function(id) {
+      //      if (id != "left-foot")
+      //        return null;
+      
       return this.objects[id];
     },
     load_emotion: function(data) {
@@ -502,8 +552,8 @@ Breeze.loader = {
     var result = Breeze.loader.parse_object(svg[0], 'g', false);
     if (normalize) {
       var points = Breeze.get_child_points(result);
-      //MetaHub.extend(result, Breeze.get_dimensions(points));
-      Breeze.normalize(result, points);    
+      MetaHub.extend(result, Breeze.get_dimensions(points));
+    Breeze.normalize_transform(result);          
     }
 
     return result;
