@@ -1,0 +1,26 @@
+
+ul {
+  list-style-type: none;
+  margin: 0pt;
+  padding: 0pt;
+}
+
+#controls {
+  display: block;
+  left: 440pt;
+  position: absolute;
+  top: 83pt;
+}
+
+#controls li {
+
+  font-size: 31pt;
+  margin-bottom: 10pt;
+}
+
+#controls input {
+  font-size:22pt;
+  text-align: right;
+  padding-right: 10pt;
+  width: 64pt;
+}

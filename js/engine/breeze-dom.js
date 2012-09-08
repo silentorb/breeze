@@ -23,13 +23,9 @@ if (!window.Breeze)
       this.defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
       this.element.appendChild(this.defs);
       this.create_layer('paper');
-      this.create_layer('overlay');
       
-    //      this.listen(this, 'connect.child', function(child) {
-    //        this.element.getElementsByClassName('paper')[0].appendChild(child.element);
-    //      });
-      this.listen(this, 'connect.overlay', function(child) {
-        this.element.getElementsByClassName('overlay')[0].appendChild(child.element);
+      this.listen(this, 'connect.child', function(child) {
+       this.layers[0].appendChild(child.element);
       });
     },
     convert_client_point: function(x, y) {
@@ -96,17 +92,21 @@ if (!window.Breeze)
     create_element: function(type) {
       return document.createElementNS('http://www.w3.org/2000/svg', type);
     },
-    //    points_to_string: function(points, curve_type) {
-    //      var text = 'M ' + points[0][0] + ', ' + points[0][1] + ' ' + curve_type;
-    //      for (var x = 1; x < points.length; x++) {
-    //        text += ', ' + points[x][0] + ', ' + points[x][1];
-    //      }
-    //        
-    //      if (points.length > 2)
-    //        text += 'z';
-    //        
-    //      return text;
-    //    },
+    parse_jquery: function(element) {
+      var result = Iris.create_element(element.nodeName.toLowerCase());
+
+      for (var x = 0; x < element.attributes.length; x++) {
+        var attribute = element.attributes.item(x);
+        result.setAttribute(attribute.nodeName, attribute.nodeValue);
+      }
+
+      $(element).children().each(function() {
+        var child = Iris.parse_jquery(this);
+        result.appendChild(child);
+      });
+      
+      return result;
+    },
     points_to_string: function(points) {
       var point, mode, text = '';
       for (var x = 0; x < points.length; x++) {
@@ -257,7 +257,6 @@ if (!window.Breeze)
       return path;
     }
   });
-        
         
   // Petal is the Breeze wrapper for an individual SVG object, usually a path
   var Petal = Meta_Object.sub_class('Petal', {

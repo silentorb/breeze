@@ -5,20 +5,30 @@ if (!window.Breeze)
   'use strict';
   MetaHub.current_module = Breeze;
   var Meta_Object = MetaHub.Meta_Object;
-    
-  window.Point = Breeze.Point = {
-    create: function(x, y) {
-      return {
-        x: x,
-        y: y
-      };  
+  
+  
+  function Point(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+  
+  Point.prototype = {
+    add: function(b) {
+      this.x += b.x;
+      this.y += b.y;
     },
-    add: function(a, b) {
-      return {
-        x: a.x + b.x,
-        y: a.y + b.y
-      };
+    copy: function() {
+      return new Point(this.x, this.y);
     }
+  };
+  
+  window.Point = Breeze.Point = Point;  
+  Point.create = function(x, y) {
+    return new Point(x, y);
+  };
+  
+  Point.add = function(a, b) {
+    return new Point(a.x + b.x, a.y + b.y);
   };
   
   var Animation_Target = Meta_Object.sub_class('Animation_Target', {
